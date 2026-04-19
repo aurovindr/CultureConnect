@@ -1,4 +1,4 @@
-const Anthropic = require('@anthropic-ai/sdk')
+import Anthropic from '@anthropic-ai/sdk'
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
@@ -15,8 +15,7 @@ When answering questions:
 - If community stories are relevant, naturally reference them (e.g. "As shared by our community from Chennai...")
 - Respond in the language requested`
 
-async function answerQuestion(question, lang, stories = []) {
-  // Build context block from DB stories
+export async function answerQuestion(question, lang, stories = []) {
   let contextBlock = ''
   if (stories.length > 0) {
     const storyLines = stories.map(s => {
@@ -38,5 +37,3 @@ async function answerQuestion(question, lang, stories = []) {
 
   return response.content[0].text.trim()
 }
-
-module.exports = { answerQuestion }
