@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
+import { supabase } from '../lib/supabase'
 
 const LANGUAGES = [
   { code: 'en', label: 'English' },
@@ -9,9 +10,14 @@ const LANGUAGES = [
   { code: 'kn', label: 'ಕನ್ನಡ' },
 ]
 
-export default function TopBar({ title, subtitle, showBack = true, showLang = true, filterStrip }) {
+export default function TopBar({ title, subtitle, showBack = true, showLang = true, showLogout = false, filterStrip }) {
   const navigate = useNavigate()
   const { i18n } = useTranslation()
+
+  async function handleLogout() {
+    await supabase.auth.signOut()
+    navigate('/login', { replace: true })
+  }
 
   return (
     <div style={{
@@ -48,6 +54,17 @@ export default function TopBar({ title, subtitle, showBack = true, showLang = tr
               {LANGUAGES.map(l => <option key={l.code} value={l.code} style={{ background: '#1a1a2e' }}>{l.label}</option>)}
             </select>
           </div>
+        )}
+        {showLogout && (
+          <button onClick={handleLogout} style={{
+            minWidth: 44, minHeight: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.3rem',
+            background: 'rgba(233,69,96,0.12)', border: '1px solid rgba(233,69,96,0.3)',
+            borderRadius: '0.5rem', color: '#e94560', fontSize: '0.78rem', fontWeight: 600,
+            cursor: 'pointer', flexShrink: 0, padding: '0 0.65rem',
+            WebkitTapHighlightColor: 'transparent',
+          }}>
+            ⏻ Logout
+          </button>
         )}
       </div>
       {filterStrip && <div style={{ marginTop: '0.5rem' }}>{filterStrip}</div>}

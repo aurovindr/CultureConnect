@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
+import { supabase } from '../lib/supabase'
 import TopBar from '../components/TopBar'
 import BottomNav from '../components/BottomNav'
 import StoryCard from '../components/StoryCard'
@@ -39,6 +40,11 @@ export default function ExploreFeed() {
   const [stories, setStories] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [currentUserId, setCurrentUserId] = useState(null)
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => setCurrentUserId(data.session?.user?.id ?? null))
+  }, [])
 
   const fetchStories = useCallback(async () => {
     setLoading(true)
@@ -65,6 +71,7 @@ export default function ExploreFeed() {
         title="🌍 CultureConnect"
         showBack={false}
         showLang
+        showLogout
         filterStrip={
           <div style={{ display: 'flex', gap: '0.5rem', overflowX: 'auto', paddingBottom: 2, scrollbarWidth: 'none' }}>
             {CATEGORIES.map(c => (
@@ -107,7 +114,7 @@ export default function ExploreFeed() {
         )}
 
         {!loading && !error && stories.map((s, i) => (
-          <StoryCard key={s.id} story={s} animDelay={i * 0.05} />
+          <StoryCard key={s.id} story={s} animDelay={i * 0.05} currentUserId={currentUserId} />
         ))}
       </div>
 

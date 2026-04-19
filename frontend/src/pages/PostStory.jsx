@@ -1,35 +1,39 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useSearchParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import TopBar from '../components/TopBar'
 import BottomNav from '../components/BottomNav'
 import CategoryChip from '../components/CategoryChip'
 
 const CATEGORIES = [
-  { value: 'food', emoji: '🍛' },
-  { value: 'culture', emoji: '🎭' },
-  { value: 'tourist', emoji: '🏛️' },
-  { value: 'events', emoji: '🎉' },
-  { value: 'traditions', emoji: '🪔' },
-  { value: 'art', emoji: '🎨' },
-  { value: 'music', emoji: '🎵' },
-  { value: 'nature', emoji: '🌿' },
+  { value: 'food', emoji: '🍛' }, { value: 'culture', emoji: '🎭' },
+  { value: 'tourist', emoji: '🏛️' }, { value: 'events', emoji: '🎉' },
+  { value: 'traditions', emoji: '🪔' }, { value: 'art', emoji: '🎨' },
+  { value: 'music', emoji: '🎵' }, { value: 'nature', emoji: '🌿' },
   { value: 'other', emoji: '✨' },
 ]
 
 const LANGUAGES = [
-  { code: 'en', label: 'English' },
-  { code: 'fr', label: 'Français' },
-  { code: 'hi', label: 'हिन्दी' },
-  { code: 'ta', label: 'தமிழ்' },
+  { code: 'en', label: 'English' }, { code: 'fr', label: 'Français' },
+  { code: 'hi', label: 'हिन्दी' }, { code: 'ta', label: 'தமிழ்' },
   { code: 'kn', label: 'ಕನ್ನಡ' },
 ]
 
 const lbl = { display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'rgba(255,255,255,0.6)', letterSpacing: '0.04em', textTransform: 'uppercase', marginBottom: '0.45rem' }
 const inp = { width: '100%', fontSize: 16, padding: '0.75rem 0.9rem', minHeight: 48, background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '0.65rem', color: '#fff', outline: 'none', WebkitAppearance: 'none', appearance: 'none' }
 
+async function getAuthHeader() {
+  const { data: { session } } = await supabase.auth.getSession()
+  return session ? { Authorization: `Bearer ${session.access_token}` } : {}
+}
+
 export default function PostStory() {
   const { t, i18n } = useTranslation()
+  const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const editId = searchParams.get('id')       // present when editing
+  const isEdit = !!editId
   const fileRef = useRef()
 
   const [text, setText] = useState('')
@@ -39,6 +43,22 @@ export default function PostStory() {
   const [mediaFile, setMediaFile] = useState(null)
   const [mediaPreview, setMediaPreview] = useState(null)
   const [loading, setLoading] = useState(false)
+  const [fetching, setFetching] = useState(isEdit)
+
+  // Load existing story when editing
+  useEffect(() => {
+    if (!editId) return
+    supabase.from('stories').select('*').eq('id', editId).single()
+      .then(({ data, error }) => {
+        if (error || !data) { alert('Story not found'); navigate('/explore'); return }
+        setText(data.text)
+        setCats(new Set(data.categories || []))
+        setLang(data.language || 'en')
+        setLocation(data.location || '')
+        if (data.media_url) setMediaPreview({ url: data.media_url, type: 'image/' })
+        setFetching(false)
+      })
+  }, [editId, navigate])
 
   function toggleCat(val) {
     setCats(prev => { const s = new Set(prev); s.has(val) ? s.delete(val) : s.add(val); return s })
@@ -59,6 +79,8 @@ export default function PostStory() {
     if (!location.trim()) { alert(t('pleaseEnterLocation')); return }
     setLoading(true)
     try {
+      const authHeader = await getAuthHeader()
+
       let mediaUrl = null
       if (mediaFile) {
         const ext = mediaFile.name.split('.').pop()
@@ -68,15 +90,19 @@ export default function PostStory() {
         const { data } = supabase.storage.from('media').getPublicUrl(path)
         mediaUrl = data.publicUrl
       }
-      // POST to backend — Claude translates and stores all language versions
-      const res = await fetch('/api/stories', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: text.trim(), categories: [...cats], language: lang, location: location.trim(), mediaUrl }),
+
+      const body = JSON.stringify({
+        text: text.trim(), categories: [...cats],
+        language: lang, location: location.trim(), mediaUrl,
       })
-      if (!res.ok) throw new Error(await res.text())
-      alert(t('postStory') + ' ✅')
-      setText(''); setCats(new Set()); setLocation(''); removeMedia()
+
+      const res = await fetch(
+        isEdit ? `/api/stories/${editId}` : '/api/stories',
+        { method: isEdit ? 'PATCH' : 'POST', headers: { 'Content-Type': 'application/json', ...authHeader }, body }
+      )
+      if (!res.ok) throw new Error((await res.json()).error || res.statusText)
+
+      navigate('/explore')
     } catch (err) {
       alert(err.message)
     } finally {
@@ -89,9 +115,15 @@ export default function PostStory() {
     alert(t('draftSaved'))
   }
 
+  if (fetching) return (
+    <div style={{ minHeight: '100dvh', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.5)' }}>
+      Loading story…
+    </div>
+  )
+
   return (
     <div style={{ minHeight: '100dvh', paddingBottom: 'calc(72px + env(safe-area-inset-bottom,0px))' }}>
-      <TopBar title={t('shareStory')} subtitle={t('shareSubtitle')} showLang={false} />
+      <TopBar title={isEdit ? '✏️ Edit Story' : t('shareStory')} subtitle={isEdit ? 'Update your story' : t('shareSubtitle')} showLang={false} />
 
       <div style={{ maxWidth: 620, margin: '0 auto', padding: '1.25rem 1rem' }}>
         <div style={{ background: 'rgba(255,255,255,0.05)', backdropFilter: 'blur(16px)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '1.25rem', padding: '1.5rem 1.25rem' }}>
@@ -133,16 +165,12 @@ export default function PostStory() {
               </div>
             ) : (
               <div style={{ position: 'relative', borderRadius: '0.65rem', overflow: 'hidden' }}>
-                {mediaPreview.type.startsWith('image/') ? (
-                  <img src={mediaPreview.url} alt="" style={{ width: '100%', maxHeight: 200, objectFit: 'cover', display: 'block' }} />
-                ) : (
+                {mediaPreview.type.startsWith('video') ? (
                   <video src={mediaPreview.url} controls style={{ width: '100%', maxHeight: 200, display: 'block' }} />
+                ) : (
+                  <img src={mediaPreview.url} alt="" style={{ width: '100%', maxHeight: 200, objectFit: 'cover', display: 'block' }} />
                 )}
-                <button onClick={removeMedia} style={{
-                  position: 'absolute', top: '0.5rem', right: '0.5rem',
-                  background: 'rgba(0,0,0,0.65)', border: 'none', color: '#fff',
-                  borderRadius: '50%', width: 32, height: 32, cursor: 'pointer', fontSize: '0.9rem',
-                }}>✕</button>
+                <button onClick={removeMedia} style={{ position: 'absolute', top: '0.5rem', right: '0.5rem', background: 'rgba(0,0,0,0.65)', border: 'none', color: '#fff', borderRadius: '50%', width: 32, height: 32, cursor: 'pointer', fontSize: '0.9rem' }}>✕</button>
               </div>
             )}
           </div>
@@ -165,11 +193,13 @@ export default function PostStory() {
 
           {/* Actions */}
           <div style={{ display: 'flex', gap: '0.75rem' }}>
-            <button onClick={saveDraft} style={{ flex: 1, padding: '0.85rem', minHeight: 52, borderRadius: '0.65rem', fontSize: '1rem', fontWeight: 600, cursor: 'pointer', background: 'transparent', border: '1.5px solid rgba(255,255,255,0.25)', color: 'rgba(255,255,255,0.7)' }}>
-              {t('saveDraft')}
-            </button>
+            {!isEdit && (
+              <button onClick={saveDraft} style={{ flex: 1, padding: '0.85rem', minHeight: 52, borderRadius: '0.65rem', fontSize: '1rem', fontWeight: 600, cursor: 'pointer', background: 'transparent', border: '1.5px solid rgba(255,255,255,0.25)', color: 'rgba(255,255,255,0.7)' }}>
+                {t('saveDraft')}
+              </button>
+            )}
             <button onClick={submit} disabled={loading} style={{ flex: 1, padding: '0.85rem', minHeight: 52, borderRadius: '0.65rem', fontSize: '1rem', fontWeight: 600, cursor: loading ? 'default' : 'pointer', background: loading ? 'rgba(255,255,255,0.12)' : '#e94560', border: 'none', color: '#fff', transition: 'background 0.2s' }}>
-              {loading ? '…' : `${t('postStory')} ✈️`}
+              {loading ? '…' : isEdit ? '✅ Save Changes' : `${t('postStory')} ✈️`}
             </button>
           </div>
 
