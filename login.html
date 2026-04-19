@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CultureConnect – Login</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      min-height: 100vh;
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      padding: env(safe-area-inset-top, 1rem) env(safe-area-inset-right, 1rem) env(safe-area-inset-bottom, 1rem) env(safe-area-inset-left, 1rem);
+    }
+
+    .card {
+      background: rgba(255,255,255,0.05);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 1.25rem;
+      padding: 2.5rem 1.75rem;
+      width: 100%;
+      max-width: 420px;
+      color: #fff;
+    }
+
+    .brand {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+
+    .brand .globe { font-size: 2.8rem; margin-bottom: 0.5rem; }
+
+    .brand h1 {
+      font-size: 1.6rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    .brand p {
+      font-size: 0.85rem;
+      color: rgba(255,255,255,0.5);
+      margin-top: 0.3rem;
+    }
+
+    .tabs {
+      display: flex;
+      background: rgba(255,255,255,0.08);
+      border-radius: 0.65rem;
+      padding: 3px;
+      margin-bottom: 1.75rem;
+    }
+
+    .tab {
+      flex: 1;
+      text-align: center;
+      padding: 0.65rem 0.5rem;
+      min-height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 0.5rem;
+      font-size: 0.9rem;
+      font-weight: 500;
+      cursor: pointer;
+      color: rgba(255,255,255,0.5);
+      transition: all 0.2s;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .tab.active {
+      background: #e94560;
+      color: #fff;
+      font-weight: 600;
+    }
+
+    .field { margin-bottom: 1.1rem; }
+
+    label {
+      display: block;
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: rgba(255,255,255,0.6);
+      margin-bottom: 0.45rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    input, select {
+      width: 100%;
+      /* 16px min prevents iOS auto-zoom */
+      font-size: 16px;
+      padding: 0.75rem 0.9rem;
+      min-height: 48px;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 0.65rem;
+      color: #fff;
+      outline: none;
+      transition: border-color 0.2s, background 0.2s;
+      -webkit-appearance: none;
+      appearance: none;
+    }
+
+    input::placeholder { color: rgba(255,255,255,0.3); }
+
+    input:focus, select:focus {
+      border-color: #e94560;
+      background: rgba(255,255,255,0.12);
+    }
+
+    select {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='rgba(255,255,255,0.5)' d='M6 8L0 0h12z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 0.9rem center;
+      padding-right: 2.5rem;
+    }
+
+    select option { background: #1a1a2e; color: #fff; }
+
+    .btn {
+      width: 100%;
+      padding: 0.9rem;
+      min-height: 52px;
+      margin-top: 0.5rem;
+      background: #e94560;
+      border: none;
+      border-radius: 0.65rem;
+      color: #fff;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .btn:hover { background: #c73652; }
+    .btn:active { transform: scale(0.98); background: #c73652; }
+
+    .footer-text {
+      text-align: center;
+      margin-top: 1.25rem;
+      font-size: 0.85rem;
+      color: rgba(255,255,255,0.4);
+    }
+
+    .footer-text a {
+      color: #e94560;
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    #field-username { display: none; }
+
+    /* Mobile: full-bleed card, no floating */
+    @media (max-width: 480px) {
+      body {
+        justify-content: flex-start;
+        padding: 0;
+        background: #1a1a2e;
+      }
+
+      .card {
+        border-radius: 0;
+        border-left: none;
+        border-right: none;
+        border-top: none;
+        min-height: 100dvh;
+        padding: 3rem 1.25rem 2rem;
+      }
+
+      .brand { margin-bottom: 2.5rem; }
+      .brand .globe { font-size: 3.5rem; }
+      .brand h1 { font-size: 1.8rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="brand">
+      <div class="globe">🌍</div>
+      <h1>CultureConnect</h1>
+      <p>Explore the world, one story at a time</p>
+    </div>
+
+    <div class="tabs">
+      <div class="tab active" id="tab-login" onclick="switchTab('login')">Login</div>
+      <div class="tab" id="tab-register" onclick="switchTab('register')">Register</div>
+    </div>
+
+    <form id="auth-form" onsubmit="handleSubmit(event)">
+      <div class="field" id="field-username">
+        <label for="username">Username</label>
+        <input type="text" id="username" name="username" placeholder="e.g. sakura_tokyo" autocomplete="username" />
+      </div>
+
+      <div class="field">
+        <label for="email">Email</label>
+        <input type="email" id="email" name="email" placeholder="you@example.com" required autocomplete="email" />
+      </div>
+
+      <div class="field">
+        <label for="password">Password</label>
+        <input type="password" id="password" name="password" placeholder="••••••••" required autocomplete="current-password" />
+      </div>
+
+      <div class="field">
+        <label for="language">Preferred Language</label>
+        <select id="language" name="language" required>
+          <option value="" disabled selected>Select a language</option>
+          <option value="en">English</option>
+          <option value="fr">Français (French)</option>
+          <option value="hi">हिन्दी (Hindi)</option>
+          <option value="ta">தமிழ் (Tamil)</option>
+          <option value="kn">ಕನ್ನಡ (Kannada)</option>
+        </select>
+      </div>
+
+      <button type="submit" class="btn" id="submit-btn">Login</button>
+    </form>
+
+    <p class="footer-text" id="footer-switch">
+      Don't have an account? <a href="#" onclick="switchTab('register'); return false;">Register</a>
+    </p>
+  </div>
+
+  <script>
+    let mode = 'login';
+
+    function switchTab(tab) {
+      mode = tab;
+      document.getElementById('tab-login').classList.toggle('active', tab === 'login');
+      document.getElementById('tab-register').classList.toggle('active', tab === 'register');
+      document.getElementById('field-username').style.display = tab === 'register' ? 'block' : 'none';
+      document.getElementById('submit-btn').textContent = tab === 'login' ? 'Login' : 'Create Account';
+      document.getElementById('footer-switch').innerHTML = tab === 'login'
+        ? 'Don\'t have an account? <a href="#" onclick="switchTab(\'register\'); return false;">Register</a>'
+        : 'Already have an account? <a href="#" onclick="switchTab(\'login\'); return false;">Login</a>';
+    }
+
+    function handleSubmit(e) {
+      e.preventDefault();
+      const data = {
+        mode,
+        email: document.getElementById('email').value,
+        language: document.getElementById('language').value,
+      };
+      if (mode === 'register') data.username = document.getElementById('username').value;
+      console.log('Auth payload:', data);
+      alert(`${mode === 'login' ? 'Login' : 'Registration'} submitted! (wire up backend)`);
+    }
+  </script>
+</body>
+</html>

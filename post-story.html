@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CultureConnect – Post a Story</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      min-height: 100vh;
+      min-height: 100dvh;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      color: #fff;
+      /* Reserve space for sticky action bar */
+      padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px));
+    }
+
+    /* ── Sticky top nav ── */
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: rgba(15,52,96,0.85);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: calc(env(safe-area-inset-top, 0px) + 0.75rem) 1rem 0.75rem;
+    }
+
+    .back {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 44px;
+      min-height: 44px;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 0.5rem;
+      color: #fff;
+      font-size: 1.2rem;
+      text-decoration: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .topbar-title h1 { font-size: 1.15rem; font-weight: 700; }
+    .topbar-title p  { font-size: 0.75rem; color: rgba(255,255,255,0.45); margin-top: 1px; }
+
+    /* ── Scrollable content ── */
+    .content {
+      padding: 1.25rem 1rem;
+      max-width: 620px;
+      margin: 0 auto;
+    }
+
+    .card {
+      background: rgba(255,255,255,0.05);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 1.25rem;
+      padding: 1.5rem 1.25rem;
+    }
+
+    .field { margin-bottom: 1.35rem; }
+
+    label {
+      display: block;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: rgba(255,255,255,0.6);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      margin-bottom: 0.45rem;
+    }
+
+    textarea, input[type="text"], select {
+      width: 100%;
+      font-size: 16px; /* prevents iOS auto-zoom */
+      padding: 0.75rem 0.9rem;
+      min-height: 48px;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 0.65rem;
+      color: #fff;
+      outline: none;
+      font-family: inherit;
+      transition: border-color 0.2s, background 0.2s;
+      -webkit-appearance: none;
+      appearance: none;
+    }
+
+    textarea::placeholder, input::placeholder { color: rgba(255,255,255,0.28); }
+
+    textarea:focus, input:focus, select:focus {
+      border-color: #e94560;
+      background: rgba(255,255,255,0.11);
+    }
+
+    textarea {
+      resize: none;
+      min-height: 120px;
+      line-height: 1.55;
+    }
+
+    .char-count {
+      text-align: right;
+      font-size: 0.73rem;
+      color: rgba(255,255,255,0.35);
+      margin-top: 0.3rem;
+    }
+    .char-count.warn { color: #e94560; }
+
+    select {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='rgba(255,255,255,0.5)' d='M6 8L0 0h12z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 0.9rem center;
+      padding-right: 2.5rem;
+      cursor: pointer;
+    }
+    select option { background: #1a1a2e; }
+
+    /* ── Categories ── */
+    .categories {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .cat-chip {
+      padding: 0.5rem 0.9rem;
+      min-height: 40px;
+      display: inline-flex;
+      align-items: center;
+      border-radius: 2rem;
+      border: 1.5px solid rgba(255,255,255,0.2);
+      background: transparent;
+      color: rgba(255,255,255,0.6);
+      font-size: 0.84rem;
+      cursor: pointer;
+      transition: all 0.18s;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+      white-space: nowrap;
+    }
+
+    .cat-chip:active { transform: scale(0.95); }
+
+    .cat-chip.selected {
+      background: #e94560;
+      border-color: #e94560;
+      color: #fff;
+      font-weight: 600;
+    }
+
+    /* ── Media upload ── */
+    .upload-area {
+      border: 2px dashed rgba(255,255,255,0.18);
+      border-radius: 0.75rem;
+      padding: 2rem 1rem;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+      position: relative;
+      min-height: 100px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0.25rem;
+    }
+
+    .upload-area:active { background: rgba(233,69,96,0.05); border-color: #e94560; }
+
+    .upload-area input[type="file"] {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+      width: 100%;
+      height: 100%;
+    }
+
+    .upload-icon { font-size: 2rem; }
+
+    .upload-area p {
+      font-size: 0.85rem;
+      color: rgba(255,255,255,0.45);
+      pointer-events: none;
+    }
+
+    .upload-area p span { color: #e94560; font-weight: 600; }
+    .upload-hint { font-size: 0.72rem; color: rgba(255,255,255,0.28); }
+
+    #media-preview {
+      display: none;
+      margin-top: 0.75rem;
+      border-radius: 0.65rem;
+      overflow: hidden;
+      position: relative;
+    }
+
+    #media-preview img, #media-preview video {
+      width: 100%;
+      max-height: 200px;
+      object-fit: cover;
+      border-radius: 0.65rem;
+      display: block;
+    }
+
+    #remove-media {
+      position: absolute;
+      top: 0.5rem;
+      right: 0.5rem;
+      background: rgba(0,0,0,0.65);
+      border: none;
+      color: #fff;
+      border-radius: 50%;
+      width: 2rem;
+      height: 2rem;
+      font-size: 0.9rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .divider {
+      border: none;
+      border-top: 1px solid rgba(255,255,255,0.08);
+      margin: 1.35rem 0;
+    }
+
+    /* ── Language + Location row ── */
+    .row {
+      display: flex;
+      gap: 0.75rem;
+    }
+
+    .row .field { flex: 1; margin-bottom: 0; }
+
+    /* ── Sticky bottom actions ── */
+    .actions-bar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      z-index: 20;
+      background: rgba(15,52,96,0.92);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-top: 1px solid rgba(255,255,255,0.1);
+      padding: 0.75rem 1rem calc(0.75rem + env(safe-area-inset-bottom, 0px));
+      display: flex;
+      gap: 0.75rem;
+      max-width: 100%;
+    }
+
+    .btn {
+      flex: 1;
+      padding: 0.85rem;
+      min-height: 52px;
+      border-radius: 0.65rem;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .btn:active { transform: scale(0.97); }
+
+    .btn-primary { background: #e94560; color: #fff; }
+    .btn-primary:active { background: #c73652; }
+
+    .btn-outline {
+      background: transparent;
+      border: 1.5px solid rgba(255,255,255,0.25);
+      color: rgba(255,255,255,0.7);
+    }
+    .btn-outline:active { border-color: #fff; color: #fff; }
+
+    /* ── Desktop tweaks ── */
+    @media (min-width: 640px) {
+      .content { padding: 1.75rem 1.5rem; }
+      .card { padding: 2rem 1.75rem; }
+      textarea { min-height: 140px; }
+
+      .upload-area:hover { border-color: #e94560; background: rgba(233,69,96,0.05); }
+      .cat-chip:hover { border-color: #e94560; color: #fff; }
+
+      .actions-bar {
+        position: static;
+        background: transparent;
+        border: none;
+        padding: 0;
+        backdrop-filter: none;
+        margin-top: 0.5rem;
+      }
+
+      body { padding-bottom: 0; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Sticky top bar -->
+  <div class="topbar">
+    <a class="back" href="login.html">&#8592;</a>
+    <div class="topbar-title">
+      <h1>Share a Story</h1>
+      <p>Your culture, the world's discovery</p>
+    </div>
+  </div>
+
+  <!-- Scrollable content -->
+  <div class="content">
+    <div class="card">
+
+      <!-- Story Text -->
+      <div class="field">
+        <label for="story-text">Your Story <span style="color:#e94560">*</span></label>
+        <textarea id="story-text" name="story" placeholder="Share a tradition, festival, dish, place, or moment from your culture..." maxlength="500" oninput="updateCharCount()"></textarea>
+        <div class="char-count" id="char-count">0 / 500</div>
+      </div>
+
+      <!-- Category -->
+      <div class="field">
+        <label>Category <span style="color:#e94560">*</span></label>
+        <div class="categories" id="categories">
+          <div class="cat-chip" onclick="toggleCat(this)" data-value="food">🍛 Food</div>
+          <div class="cat-chip" onclick="toggleCat(this)" data-value="culture">🎭 Culture</div>
+          <div class="cat-chip" onclick="toggleCat(this)" data-value="tourist">🏛️ Tourist Places</div>
+          <div class="cat-chip" onclick="toggleCat(this)" data-value="events">🎉 Events &amp; Festivals</div>
+          <div class="cat-chip" onclick="toggleCat(this)" data-value="traditions">🪔 Traditions</div>
+          <div class="cat-chip" onclick="toggleCat(this)" data-value="art">🎨 Art &amp; Craft</div>
+          <div class="cat-chip" onclick="toggleCat(this)" data-value="music">🎵 Music &amp; Dance</div>
+          <div class="cat-chip" onclick="toggleCat(this)" data-value="nature">🌿 Nature &amp; Wildlife</div>
+          <div class="cat-chip" onclick="toggleCat(this)" data-value="other">✨ Other</div>
+        </div>
+      </div>
+
+      <hr class="divider" />
+
+      <!-- Media Upload -->
+      <div class="field">
+        <label>Photo or Video <span style="color:rgba(255,255,255,0.3)">(optional)</span></label>
+        <div class="upload-area" id="upload-area">
+          <input type="file" id="media-input" accept="image/*,video/*" onchange="handleMedia(event)" />
+          <div class="upload-icon">📷</div>
+          <p>Tap to add a <span>photo or video</span></p>
+          <p class="upload-hint">JPG, PNG, WEBP, MP4, MOV · Max 50 MB</p>
+        </div>
+        <div id="media-preview">
+          <button id="remove-media" onclick="removeMedia()" title="Remove">✕</button>
+        </div>
+      </div>
+
+      <hr class="divider" />
+
+      <!-- Language & Location -->
+      <div class="row">
+        <div class="field">
+          <label for="language">Language</label>
+          <select id="language" name="language">
+            <option value="en">English</option>
+            <option value="fr">Français</option>
+            <option value="hi">हिन्दी</option>
+            <option value="ta">தமிழ்</option>
+            <option value="kn">ಕನ್ನಡ</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="location">Location <span style="color:#e94560">*</span></label>
+          <input type="text" id="location" name="location" placeholder="e.g. Mysore, India" required />
+        </div>
+      </div>
+
+      <!-- Actions (desktop: inline; mobile: sticky bar below) -->
+      <div class="actions-bar">
+        <button class="btn btn-outline" onclick="saveDraft()">Save Draft</button>
+        <button class="btn btn-primary" onclick="submitStory()">Post Story ✈️</button>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    const selected = new Set();
+
+    function updateCharCount() {
+      const el = document.getElementById('story-text');
+      const count = el.value.length;
+      const display = document.getElementById('char-count');
+      display.textContent = `${count} / 500`;
+      display.classList.toggle('warn', count > 450);
+    }
+
+    function toggleCat(chip) {
+      const val = chip.dataset.value;
+      if (selected.has(val)) {
+        selected.delete(val);
+        chip.classList.remove('selected');
+      } else {
+        selected.add(val);
+        chip.classList.add('selected');
+      }
+    }
+
+    function handleMedia(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const preview = document.getElementById('media-preview');
+      preview.innerHTML = '<button id="remove-media" onclick="removeMedia()" title="Remove">✕</button>';
+      const url = URL.createObjectURL(file);
+      const el = file.type.startsWith('image/') ? document.createElement('img') : document.createElement('video');
+      el.src = url;
+      if (el.tagName === 'VIDEO') el.controls = true;
+      preview.appendChild(el);
+      preview.style.display = 'block';
+      document.getElementById('upload-area').style.display = 'none';
+    }
+
+    function removeMedia() {
+      document.getElementById('media-preview').style.display = 'none';
+      document.getElementById('upload-area').style.display = 'flex';
+      document.getElementById('media-input').value = '';
+    }
+
+    function getFormData() {
+      return {
+        text: document.getElementById('story-text').value.trim(),
+        categories: [...selected],
+        language: document.getElementById('language').value,
+        location: document.getElementById('location').value.trim(),
+        hasMedia: !!document.getElementById('media-input').files[0],
+      };
+    }
+
+    function submitStory() {
+      const data = getFormData();
+      if (!data.text) { alert('Please write your story before posting.'); return; }
+      if (data.categories.length === 0) { alert('Please select at least one category.'); return; }
+      if (!data.location) { alert('Please enter a location.'); return; }
+      console.log('Posting story:', data);
+      alert('Story posted! (wire up backend + Claude translation)');
+    }
+
+    function saveDraft() {
+      const data = getFormData();
+      localStorage.setItem('story_draft', JSON.stringify(data));
+      alert('Draft saved locally.');
+    }
+
+    const draft = localStorage.getItem('story_draft');
+    if (draft) {
+      try {
+        const d = JSON.parse(draft);
+        if (d.text) document.getElementById('story-text').value = d.text;
+        if (d.language) document.getElementById('language').value = d.language;
+        if (d.location) document.getElementById('location').value = d.location;
+        if (d.categories) d.categories.forEach(v => {
+          const chip = document.querySelector(`.cat-chip[data-value="${v}"]`);
+          if (chip) toggleCat(chip);
+        });
+        updateCharCount();
+      } catch(_) {}
+    }
+  </script>
+
+</body>
+</html>
