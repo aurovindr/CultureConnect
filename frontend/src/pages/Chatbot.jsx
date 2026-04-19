@@ -3,35 +3,43 @@ import { useTranslation } from 'react-i18next'
 import TopBar from '../components/TopBar'
 import BottomNav from '../components/BottomNav'
 
-const SUGGESTIONS = {
-  en: ['🎉 What is the significance of Diwali?', '🍛 What makes South Indian food unique?', '🏛️ Tell me about the Mysuru Dasara festival.', '🎨 What is Kolam and why is it drawn?'],
-  hi: ['🎉 दीवाली का क्या महत्व है?', '🍛 दक्षिण भारतीय भोजन क्या खास बनाता है?', '🏛️ मैसूर दशहरा के बारे में बताएं।', '🎨 कोलम क्या है?'],
-  fr: ['🎉 Quelle est la signification de Diwali ?', '🍛 Qu\'est-ce qui rend la cuisine sud-indienne unique ?', '🏛️ Parlez-moi du festival Mysuru Dasara.', '🎨 Qu\'est-ce que le Kolam ?'],
-  ta: ['🎉 தீபாவளியின் முக்கியத்துவம் என்ன?', '🍛 தென்னிந்திய உணவை தனிப்பட்டதாக்குவது என்ன?', '🏛️ மைசூரு தசரா பண்டிகை பற்றி சொல்லுங்கள்.', '🎨 கோலம் என்றால் என்ன?'],
-  kn: ['🎉 ದೀಪಾವಳಿಯ ಮಹತ್ವವೇನು?', '🍛 ದಕ್ಷಿಣ ಭಾರತದ ಆಹಾರವನ್ನು ವಿಶಿಷ್ಟವಾಗಿಸುವುದೇನು?', '🏛️ ಮೈಸೂರು ದಸರಾ ಹಬ್ಬದ ಬಗ್ಗೆ ಹೇಳಿ.', '🎨 ಕೋಲಮ್ ಎಂದರೇನು?'],
-}
+const CAT_EMOJI = { food: '🍛', culture: '🎭', tourist: '🏛️', events: '🎉', traditions: '🪔', art: '🎨', music: '🎵', nature: '🌿', other: '✨' }
 
 export default function Chatbot() {
   const { t, i18n } = useTranslation()
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
+  const [suggestions, setSuggestions] = useState([])
+  const [storyCount, setStoryCount] = useState(null)
   const bottomRef = useRef()
   const textareaRef = useRef()
-
   const lang = i18n.language
-  const suggestions = SUGGESTIONS[lang] || SUGGESTIONS.en
+
+  // Load suggestions from DB stories
+  useEffect(() => {
+    fetch(`/api/chat/suggestions?lang=${lang}`)
+      .then(r => r.json())
+      .then(data => setSuggestions(Array.isArray(data) ? data : []))
+      .catch(() => setSuggestions([]))
+  }, [lang])
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [messages])
 
-  function autoResize(el) { el.style.height = 'auto'; el.style.height = Math.min(el.scrollHeight, 100) + 'px' }
+  function autoResize(el) {
+    el.style.height = 'auto'
+    el.style.height = Math.min(el.scrollHeight, 100) + 'px'
+  }
+
+  function now() {
+    return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+  }
 
   async function sendMessage(text) {
     const q = (text || input).trim()
     if (!q) return
     setInput('')
-    if (textareaRef.current) { textareaRef.current.style.height = 'auto' }
-
+    if (textareaRef.current) textareaRef.current.style.height = 'auto'
     setMessages(prev => [...prev, { role: 'user', text: q, time: now() }])
     setLoading(true)
 
@@ -42,24 +50,27 @@ export default function Chatbot() {
         body: JSON.stringify({ question: q, language: lang }),
       })
       const data = await res.json()
+      if (data.error) throw new Error(data.error)
+      setStoryCount(data.storyCount)
       setMessages(prev => [...prev, { role: 'bot', text: data.answer, time: now(), translated: lang !== 'en' }])
-    } catch {
-      setMessages(prev => [...prev, { role: 'bot', text: '⚠️ Could not reach the server. Please try again.', time: now() }])
+    } catch (err) {
+      setMessages(prev => [...prev, { role: 'bot', text: `⚠️ ${err.message || 'Could not reach the server.'}`, time: now() }])
     } finally {
       setLoading(false)
     }
   }
 
-  function now() { return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }
+  function handleKey(e) {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage() }
+  }
 
-  function handleKey(e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage() } }
-
-  const bubble = (role) => ({
-    maxWidth: 'calc(100% - 80px)', padding: '0.7rem 0.9rem', borderRadius: '1rem', fontSize: '0.9rem', lineHeight: 1.55,
+  const bubble = role => ({
+    maxWidth: 'calc(100% - 80px)', padding: '0.7rem 0.9rem', borderRadius: '1rem',
+    fontSize: '0.9rem', lineHeight: 1.55,
     background: role === 'user' ? '#e94560' : 'rgba(255,255,255,0.07)',
     border: role === 'user' ? 'none' : '1px solid rgba(255,255,255,0.1)',
     borderTopRightRadius: role === 'user' ? '0.2rem' : '1rem',
-    borderTopLeftRadius: role === 'bot' ? '0.2rem' : '1rem',
+    borderTopLeftRadius: role === 'bot'  ? '0.2rem' : '1rem',
   })
 
   return (
@@ -73,18 +84,46 @@ export default function Chatbot() {
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flex: 1, textAlign: 'center', gap: '1rem', padding: '2rem 1rem' }}>
             <div style={{ fontSize: '3.5rem' }}>🤖</div>
             <h2 style={{ fontSize: '1.2rem', fontWeight: 700, margin: 0 }}>{t('welcomeChat')}</h2>
-            <p style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.5)', lineHeight: 1.55, maxWidth: 300 }}>{t('welcomeChatSub')}</p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', width: '100%', maxWidth: 360 }}>
-              {suggestions.map((s, i) => (
-                <div key={i} onClick={() => sendMessage(s)} style={{
-                  background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)',
-                  borderRadius: '0.75rem', padding: '0.65rem 0.9rem', fontSize: '0.84rem',
-                  color: 'rgba(255,255,255,0.7)', cursor: 'pointer', textAlign: 'left',
-                }}>
-                  {s}
-                </div>
-              ))}
-            </div>
+            <p style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.5)', lineHeight: 1.55, maxWidth: 300 }}>
+              {t('welcomeChatSub')}
+            </p>
+
+            {storyCount !== null && storyCount > 0 && (
+              <div style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.35)', background: 'rgba(255,255,255,0.05)', borderRadius: '2rem', padding: '0.3rem 0.8rem' }}>
+                📚 Grounded in {storyCount} community stories
+              </div>
+            )}
+
+            {/* Dynamic suggestions from DB */}
+            {suggestions.length > 0 ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', width: '100%', maxWidth: 360 }}>
+                {suggestions.map((s, i) => (
+                  <div key={i} onClick={() => sendMessage(`Tell me about ${s.snippet}`)} style={{
+                    background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)',
+                    borderRadius: '0.75rem', padding: '0.65rem 0.9rem', fontSize: '0.84rem',
+                    color: 'rgba(255,255,255,0.7)', cursor: 'pointer', textAlign: 'left',
+                    display: 'flex', gap: '0.5rem', alignItems: 'flex-start',
+                  }}>
+                    <span style={{ flexShrink: 0 }}>{CAT_EMOJI[s.category] || '✨'}</span>
+                    <span style={{ overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
+                      {s.snippet}…
+                      <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.75rem' }}> · {s.location}</span>
+                    </span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              // Fallback static suggestions if DB is empty
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', width: '100%', maxWidth: 360 }}>
+                {['🎉 What is the significance of Diwali?', '🍛 What makes South Indian food unique?', '🏛️ Tell me about Mysuru Dasara.', '🎨 What is Kolam?'].map((s, i) => (
+                  <div key={i} onClick={() => sendMessage(s)} style={{
+                    background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)',
+                    borderRadius: '0.75rem', padding: '0.65rem 0.9rem', fontSize: '0.84rem',
+                    color: 'rgba(255,255,255,0.7)', cursor: 'pointer', textAlign: 'left',
+                  }}>{s}</div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
@@ -96,7 +135,7 @@ export default function Chatbot() {
             <div>
               <div style={bubble(m.role)} dangerouslySetInnerHTML={{ __html: m.text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>') }} />
               <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.3)', marginTop: '0.3rem', display: 'flex', gap: '0.35rem', justifyContent: m.role === 'user' ? 'flex-end' : 'flex-start' }}>
-                {m.translated && <span>🤖 {t('translatedByClaude')} ·</span>}
+                {m.translated && <span>🌐 {t('translatedByClaude')} ·</span>}
                 <span>{m.time}</span>
               </div>
             </div>
