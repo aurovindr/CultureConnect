@@ -30,7 +30,6 @@ export default function BottomNav() {
       padding: `0.5rem 0 calc(0.5rem + env(safe-area-inset-bottom, 0px))`,
     }}>
       {item('🏠', t('explore'), '/explore')}
-      {item('🔍', t('search'), '/search')}
       <button onClick={() => navigate('/post')} style={{
         flex: 'none', margin: '0 0.5rem', background: 'none', border: 'none', cursor: 'pointer',
         WebkitTapHighlightColor: 'transparent',
@@ -43,7 +42,6 @@ export default function BottomNav() {
         }}>＋</div>
       </button>
       {item('🤖', 'Ask', '/chat')}
-      {item('👤', t('profile'), '/profile')}
     </nav>
   )
 }
